@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const RetreatSchema = new mongoose.Schema({
   title: {
@@ -10,8 +11,8 @@ const RetreatSchema = new mongoose.Schema({
     required: true
   },
   date: {
-    type: Number,
-    default: Date.now,  
+    type: Date,
+    default: Date.now,
     required: true
   },
   location: {
@@ -39,5 +40,7 @@ const RetreatSchema = new mongoose.Schema({
     required: true
   }
 });
+
+RetreatSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Retreat', RetreatSchema);

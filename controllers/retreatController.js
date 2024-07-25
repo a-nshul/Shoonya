@@ -1,48 +1,42 @@
+const { pick } = require('lodash');
 const Retreat = require('../models/RetreatModel');
 
 const getRetreats = async (req, res) => {
   try {
-    const { location, type, condition, search, page = 1, limit = 10 } = req.query;
-    let query = {};
+    const { page = 1, limit = 10, location } = req.query;
+    const options = {
+      page: parseInt(page, 10),
+      limit: parseInt(limit, 10),
+    };
 
-    if (location) query.location = location;
-    if (type) query.type = type;
-    if (condition) query.condition = condition;
+    const filter = pick(req.query, ['location']);
+    const query = {};
 
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+    if (filter.location) {
+      query.location = new RegExp(`^${filter.location}$`, 'i'); 
     }
 
-    // Convert page and limit to integers
-    const pageNumber = parseInt(page, 10);
-    const pageSize = parseInt(limit, 10);
 
-    // Fetch retreats with pagination
-    const retreats = await Retreat.find(query)
-      .skip((pageNumber - 1) * pageSize)
-      .limit(pageSize);
-
-    // Fetch total count for pagination info
-    const totalRetreats = await Retreat.countDocuments(query);
+    const retreats = await Retreat.paginate(query, options);
 
     res.status(200).json({
-      retreats,
-      pagination: {
-        page: pageNumber,
-        limit: pageSize,
-        total: totalRetreats
-      }
+      success: true,
+      data: retreats.docs,
+      total: retreats.totalDocs,
+      page: retreats.page,
+      totalPages: retreats.totalPages,
+      limit: retreats.limit,
     });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ error: 'Server error' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+    });
   }
 };
 
-const createRetreat =async(req,res)=>{
+const createRetreat = async (req, res) => {
   try {
     const newRetreat = await Retreat.create(req.body);
     res.status(201).json({ newRetreat, message: 'Retreat created successfully' });
@@ -50,6 +44,6 @@ const createRetreat =async(req,res)=>{
     console.error(err.message);
     res.status(500).json({ error: 'Server error' });
   }
-}
+};
 
-module.exports = { getRetreats,createRetreat };
+module.exports = { getRetreats, createRetreat };
